@@ -63,10 +63,8 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun attachContactList() {
-        val list = getSMSList().filter {
-            isBankTransactionMSG(it)
-        }
-        adapter.submitList(list)
+        val smsList = getSMSList()
+        adapter.submitList(smsList)
 
         val appList = mutableSetOf<String>()
         getSMSForCheckAppInstalled().forEach {
@@ -74,38 +72,37 @@ class MainActivity : AppCompatActivity() {
         }
         tv_appNames.text = "App present in SMS: ${appList}"
 
-        val smsSet: Set<String> = list.map { it.address.substring(3, it.address.length) }.toSet()
-        adapterWithAccountFilter.submitFilterList(smsSet, list as ArrayList<SMSModel>)
+        val smsSet: Set<String> = smsList.map { it.address.substring(3, it.address.length) }.toSet()
+        adapterWithAccountFilter.submitFilterList(smsSet, smsList as ArrayList<SMSModel>)
     }
 
-    private fun isBankTransactionMSG(sms: SMSModel): Boolean {
-        return (sms.body.contains("credited", ignoreCase = true)
-                || sms.body.contains("debited", ignoreCase = true)
-                || sms.body.contains("withdrawal", ignoreCase = true)
-                || sms.body.contains("transferred", ignoreCase = true)
-                || sms.body.contains("cr", true)
-                || sms.body.contains("deposited", true)
-                || sms.body.contains("deposit", true)
-                || sms.body.contains("received", true)
-                || sms.body.contains("Paid", true)
-                && !sms.body.contains("otp", true)
-                && !sms.body.contains("failed", true)
-                && !sms.body.contains("emi", true)
-                || sms.body.contains("withdrawn", true)
-                || sms.body.contains("spent", true)
-                || sms.body.contains("paying", true)
-                || sms.body.contains("payment", true)
-                || sms.body.contains("deducted", true)
-                || sms.body.contains("debited", true)
-                || sms.body.contains("purchase", true)
-                || sms.body.contains("dr", true)
-                || sms.body.contains("with salary", true)
-                || sms.body.contains("INR", true)
-                && !sms.body.contains("otp", true)
-                || sms.body.contains("txn", true)
-                || sms.body.contains("transfer", true)
-                && !sms.body.contains("We are pleased to inform that", true)
-                && !sms.body.contains("has been opened", true)
+    private fun isBankTransactionMSG(body: String): Boolean {
+        return (body.contains("credited", ignoreCase = true)
+                || body.contains("debited", ignoreCase = true)
+                || body.contains("withdrawal", ignoreCase = true)
+                || body.contains("transferred", ignoreCase = true)
+                || body.contains("cr", true)
+                || body.contains("deposited", true)
+                || body.contains("deposit", true)
+                || body.contains("received", true)
+                || body.contains("Paid", true)
+                || body.contains("withdrawn", true)
+                || body.contains("spent", true)
+                || body.contains("paying", true)
+                || body.contains("payment", true)
+                || body.contains("deducted", true)
+                || body.contains("debited", true)
+                || body.contains("purchase", true)
+                || body.contains("dr", true)
+                || body.contains("with salary", true)
+                || body.contains("INR", true)
+                || body.contains("txn", true)
+                || body.contains("transfer", true)
+                && (!body.contains("We are pleased to inform that", true)
+                && !body.contains("has been opened", true)
+                && !body.contains("otp", true)
+                && !body.contains("failed", true)
+                && !body.contains("emi", true))
                 )
     }
 
@@ -148,56 +145,8 @@ class MainActivity : AppCompatActivity() {
 
     private fun getSMSList(): List<SMSModel> {
         val lstSms: MutableList<SMSModel> = ArrayList()
-        /*val cr = contentResolver
-        val c = cr.query(
-            Telephony.Sms.Inbox.CONTENT_URI,
-            arrayOf(
-                Telephony.Sms.Inbox.SUBSCRIPTION_ID,
-                Telephony.Sms.Inbox.ADDRESS,
-                Telephony.Sms.Inbox.DATE,
-                Telephony.Sms.Inbox.BODY
-            ),  // Select body text
-            null,
-            null,
-            Telephony.Sms.Inbox.DEFAULT_SORT_ORDER
-        ) // Default
-
-        // sort
-        // order);
-        val totalSMS = c!!.count
-
-        if (c.moveToFirst()) {
-            for (i in 0 until totalSMS) {
-                val matcher: Matcher = regEx.matcher(c.getString(1))
-                if (matcher.find()) {
-                    val address = c.getString(1)
-                    val body = c.getString(3)
-                    val date = c.getString(2).toLong()
-                    lstSms.add(
-                        SMSModel(
-                            address = address,
-                            body = body,
-                            date = millisToDate(date),
-                            avlBalance = "Avl Bal: ${getAvailableBalance(body)}",
-                            balance = "bal: ${getAmount(body)}",
-                            cardType = "Card Type: ${findCreditCardOrDebitCard(body, address)}",
-                            refNumber = "Ref Number: ${getRefComanNumber(body)}",
-                            transactionType = "txn type: ${transactionType(body)}"
-                        )
-                    )
-                }
-                c.moveToNext()
-            }
-        } else {
-            throw RuntimeException("You have no SMS in Inbox")
-        }
-        c.close()*/
-
-        // public static final String INBOX = "content://sms/inbox";
-// public static final String SENT = "content://sms/sent";
-// public static final String DRAFT = "content://sms/draft";
         try {
-            val projection = arrayOf("_id", "address", "person", "body", "date", "type")
+            val projection = arrayOf("_id", "address", "body", "date")
             val cursor: Cursor? =
                 contentResolver.query(
                     Uri.parse("content://sms/inbox"),
@@ -209,40 +158,28 @@ class MainActivity : AppCompatActivity() {
 
             if (cursor?.moveToFirst() == true) { // must check the result to prevent exception
                 val index_Address: Int = cursor.getColumnIndex("address")
-                val index_Person: Int = cursor.getColumnIndex("person")
                 val index_Body: Int = cursor.getColumnIndex("body")
                 val index_Date: Int = cursor.getColumnIndex("date")
-                val index_Type: Int = cursor.getColumnIndex("type")
                 do {
                     val address: String = cursor.getString(index_Address)
-                    val intPerson: Int = cursor.getInt(index_Person)
                     val body: String = cursor.getString(index_Body)
                     val date: Long = cursor.getLong(index_Date)
-                    val int_Type: Int = cursor.getInt(index_Type)
-                    // checkSenderIsValid(sender = cursor.getString(index_Address))
-                    val matcher: Matcher = regEx.matcher(cursor.getString(index_Address))
-                    /*matcher.find() && checkSenderIsInValid(
-                        sender = cursor.getString(
-                            index_Address
+                    if (checkSenderIsValid(sender = address) && isBankTransactionMSG(body) && !body.contains(
+                            "otp",
+                            true
                         )
-                    )*/
-                    if (checkSenderIsValid(sender = address)) {
+                    ) {
                         lstSms.add(
                             SMSModel(
                                 address = address,
                                 body = body,
                                 date = millisToDate(date),
-                                avlBalance = getAvailableBalance(body).toDouble(),
+                                avlBalance = getAvailableBalance(body),
                                 balance = getAmount(body).toDouble(),
-                                accNumber = "Acc No: ${getAccountNumber(body)}",
-                                cardType = "Card Type: ${
-                                    findCreditCardOrDebitCard(
-                                        body,
-                                        address
-                                    )
-                                }",
-                                refNumber = "Ref Number: ${getRefComanNumber(body)}",
-                                transactionType = "txn type: ${transactionType(body)}"
+//                                accNumber = "Acc No: ${getAccountNumber(body)}",
+                                cardType = findCreditCardOrDebitCard(body, address),
+//                                refNumber = "Ref Number: ${getRefComanNumber(body)}",
+                                transactionType = transactionType(body)
                             )
                         )
 //                        extractMerchantNameFromSMS(body)
@@ -253,7 +190,7 @@ class MainActivity : AppCompatActivity() {
                 // empty box, no SMS
             }
         } catch (e: Exception) {
-
+            e.printStackTrace()
         }
         return lstSms
     }
@@ -352,11 +289,11 @@ data class SMSModel(
     val body: String,
     val avlBalance: Double = 0.0,
     val balance: Double = 0.0,
-    val cardType: String,
-    val accNumber: String,
-    val transactionType: String,
-    val refNumber: String,
-    val date: String
+    val cardType: String = "",
+    val accNumber: String = "",
+    val transactionType: String = "",
+    val refNumber: String = "",
+    val date: String = ""
 )
 
 data class SMSAppModel(

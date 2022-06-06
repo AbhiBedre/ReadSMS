@@ -52,4 +52,5 @@ dependencies {
 //    implementation 'com.github.AbhiBedre:ScreenUsage:Tag'
 //    implementation project(':ScreenUsage')
     implementation 'com.github.AbhiBedre:ScreenUsageDemo:1.4'
+    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.3.9")
 }

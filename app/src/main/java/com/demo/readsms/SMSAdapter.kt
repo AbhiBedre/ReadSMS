@@ -30,14 +30,19 @@ class SMSAdapter(
     @SuppressLint("SetTextI18n")
     override fun onBindViewHolder(holder: ViewHolder, position: Int) {
         if (!isBankFilter) {
+            val bal_text = if (list[position].transactionType == "debited") {
+                "debited bal: ${list[position].balance}<br>"
+            } else {
+                "credited bal: ${list[position].balance}<br>"
+            }
             holder.tvAddress.text = Html.fromHtml(
                 "<h5>${list[position].address}</h5>" +
                         "msg body: ${list[position].body}<br><br>" +
                         "Avl Bal: ${list[position].avlBalance}<br>" +
-                        "bal: ${list[position].balance}<br>" +
-                        "${list[position].cardType}<br>" +
+                        bal_text +
+                        "Card Type: ${list[position].cardType}<br>" +
                         "${list[position].accNumber}<br>" +
-                        "${list[position].transactionType}<br>" +
+                        "txn type: ${list[position].transactionType}<br>" +
                         "${list[position].refNumber}<br>" +
                         "${list[position].date}"
             )
@@ -48,9 +53,12 @@ class SMSAdapter(
             } else {
                 bankList.first { it.avlBalance > 0.0 }.avlBalance ?: 0.0
             }
-            val debitedAmt = bankList.sumOf { it.balance }
+            val debitedAmt =
+                bankList.filter { it.transactionType == "debited" }.sumOf { it.balance }
+            val creditedAmt =
+                bankList.filter { it.transactionType == "credited" }.sumOf { it.balance }
             holder.tvAddress.text =
-                "${filterList.elementAt(position)}:\navl_bal: ${avl_bal}\ndebitedAmt: ${debitedAmt}"
+                "${filterList.elementAt(position)}:\navl_bal: ${avl_bal}\ndebitedAmt: ${debitedAmt}\ncreditedAmt: ${creditedAmt}"
         }
     }
 
