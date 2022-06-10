@@ -8,6 +8,8 @@ import android.view.View
 import android.view.ViewGroup
 import android.widget.TextView
 import androidx.recyclerview.widget.RecyclerView
+import com.demo.readsms.extensions.decimalFormatter
+import com.demo.readsms.extensions.millisToDate
 
 class SMSAdapter(
     val context: Context,
@@ -41,24 +43,28 @@ class SMSAdapter(
                         "Avl Bal: ${list[position].avlBalance}<br>" +
                         bal_text +
                         "Card Type: ${list[position].cardType}<br>" +
-                        "${list[position].accNumber}<br>" +
+//                        "${list[position].accNumber}<br>" +
                         "txn type: ${list[position].transactionType}<br>" +
                         "${list[position].refNumber}<br>" +
-                        "${list[position].date}"
+                        "${millisToDate(list[position].date)}"
             )
         } else {
-            val bankList = list.filter { it.address.contains(filterList.elementAt(position)) }
+            val bankList = list.filter { it.bankName.contains(filterList.elementAt(position)) }
             val avl_bal = if (bankList.none { it.avlBalance > 0.0 }) {
                 0.0
             } else {
                 bankList.first { it.avlBalance > 0.0 }.avlBalance ?: 0.0
             }
             val debitedAmt =
-                bankList.filter { it.transactionType == "debited" }.sumOf { it.balance }
+                bankList.filter {
+                    it.transactionType == "debited"
+                    /*&& millisToDate(it.date) == getCurrentMonth()*/
+                }.sumOf { it.balance }
             val creditedAmt =
-                bankList.filter { it.transactionType == "credited" }.sumOf { it.balance }
+                bankList.filter { it.transactionType == "credited" /*&& millisToDate(it.date) == getCurrentMonth()*/ }
+                    .sumOf { it.balance }
             holder.tvAddress.text =
-                "${filterList.elementAt(position)}:\navl_bal: ${avl_bal}\ndebitedAmt: ${debitedAmt}\ncreditedAmt: ${creditedAmt}"
+                "${filterList.elementAt(position)}:\navl_bal: ${avl_bal.decimalFormatter()}\ndebitedAmt: ${debitedAmt.decimalFormatter()}\ncreditedAmt: ${creditedAmt.decimalFormatter()}"
         }
     }
 

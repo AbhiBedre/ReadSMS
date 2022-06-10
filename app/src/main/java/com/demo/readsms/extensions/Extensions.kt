@@ -1,6 +1,11 @@
 package com.demo.readsms.extensions
 
 import android.annotation.SuppressLint
+import android.util.Log
+import java.text.DateFormat
+import java.text.DecimalFormat
+import java.text.SimpleDateFormat
+import java.util.*
 import java.util.regex.Matcher
 import java.util.regex.Pattern
 
@@ -12,238 +17,328 @@ fun getAvailableBalance(smsBody: String): Double {
     // Find instance of pattern matches
     if (smsBody.contains("curr o/s - ", true)) {
         var newBody = smsBody.split("o/s - ")
-        val m = regEx.matcher(newBody[1].trim())
-        if (m.find()) {
-            var amount = m.group(0).replace("inr".toRegex(), "")
-            amount = amount.replace("rs.", "", true)
-            amount = amount.replace("rs".toRegex(), "")
-            amount = amount.replace("inr".toRegex(), "")
-            amount = amount.replace(" ".toRegex(), "")
-            amount = amount.replace(",".toRegex(), "")
-            if (amount.count { ch -> ch == '.' } > 1) {
-                amount = amount.replaceFirst(".".toRegex(), "")
+        if (newBody.isNotEmpty() && newBody.size > 1) {
+            val m = regEx.matcher(newBody[1].trim())
+            if (m.find()) {
+                var amount = m.group(0) ?: "0.0"
+                amount = amount.replace("rs.", "", true)
+                amount = amount.replace("rs", "", true)
+                amount = amount.replace("inr", "", true)
+                amount = amount.replace(" ", "", true)
+                amount = amount.replace(",", "", true)
+                if (amount.count { ch -> ch == '.' } > 1) {
+                    amount = amount.replaceFirst(".".toRegex(), "")
+                }
+                return if (amount.isEmpty()) 0.0 else amount.toDouble()
             }
-            return if(amount.isEmpty()) 0.0 else amount.toDouble()
+            // smsDto.refNumber="balance"
+        } else {
+            return 0.0
         }
     } else if (smsBody.contains("The Balance is", true)) {
         var newBody = smsBody.split("The Balance is ")
-        val m = regEx.matcher(newBody[1].trim())
-        if (m.find()) {
-            var amount = m.group(0) ?: "0.0"
-            amount = amount.replace("rs.", "", true)
-            amount = amount.replace("rs", "", true)
-            amount = amount.replace("inr", "", true)
-            amount = amount.replace(" ", "", true)
-            amount = amount.replace(",", "", true)
-            if (amount.count { ch -> ch == '.' } > 1) {
-                amount = amount.replaceFirst(".".toRegex(), "")
+        if (newBody.isNotEmpty() && newBody.size > 1) {
+            val m = regEx.matcher(newBody[1].trim())
+            if (m.find()) {
+                var amount = m.group(0) ?: "0.0"
+                amount = amount.replace("rs.", "", true)
+                amount = amount.replace("rs", "", true)
+                amount = amount.replace("inr", "", true)
+                amount = amount.replace(" ", "", true)
+                amount = amount.replace(",", "", true)
+                if (amount.count { ch -> ch == '.' } > 1) {
+                    amount = amount.replaceFirst(".".toRegex(), "")
+                }
+                return if (amount.isEmpty()) 0.0 else amount.toDouble()
             }
-            return if(amount.isEmpty()) 0.0 else amount.toDouble()
+            // smsDto.refNumber="balance"
+        } else {
+            return 0.0
         }
     } else if (smsBody.contains("The Available Balance is", true)) {
         var newBody = smsBody.split("The Available Balance is ")
-        val m = regEx.matcher(newBody[1].trim())
-        if (m.find()) {
-            var amount = m.group(0) ?: "0.0"
-            amount = amount.replace("rs.", "", true)
-            amount = amount.replace("rs", "", true)
-            amount = amount.replace("inr", "", true)
-            amount = amount.replace(" ", "", true)
-            amount = amount.replace(",", "", true)
-            if (amount.count { ch -> ch == '.' } > 1) {
-                amount = amount.replaceFirst(".".toRegex(), "")
+        if (newBody.isNotEmpty() && newBody.size > 1) {
+            val m = regEx.matcher(newBody[1].trim())
+            if (m.find()) {
+                var amount = m.group(0) ?: "0.0"
+                amount = amount.replace("rs.", "", true)
+                amount = amount.replace("rs", "", true)
+                amount = amount.replace("inr", "", true)
+                amount = amount.replace(" ", "", true)
+                amount = amount.replace(",", "", true)
+                if (amount.count { ch -> ch == '.' } > 1) {
+                    amount = amount.replaceFirst(".".toRegex(), "")
+                }
+                return if (amount.isEmpty()) 0.0 else amount.toDouble()
             }
-            return if(amount.isEmpty()) 0.0 else amount.toDouble()
+            // smsDto.refNumber="balance"
+        } else {
+            return 0.0
         }
+//        return readAmountFromAvlBal(m)
     } else if (smsBody.contains("Avbl Lmt:", true)) {
         var newBody = smsBody.split("Avbl Lmt:")
-        val m = regEx.matcher(newBody[1].trim())
-        if (m.find()) {
-            var amount = m.group(0) ?: "0.0"
-            amount = amount.replace("rs.", "", true)
-            amount = amount.replace("rs", "", true)
-            amount = amount.replace("inr", "", true)
-            amount = amount.replace(" ", "", true)
-            amount = amount.replace(",", "", true)
-            if (amount.count { ch -> ch == '.' } > 1) {
-                amount = amount.replaceFirst(".".toRegex(), "")
+        if (newBody.isNotEmpty() && newBody.size > 1) {
+            val m = regEx.matcher(newBody[1].trim())
+            if (m.find()) {
+                var amount = m.group(0) ?: "0.0"
+                amount = amount.replace("rs.", "", true)
+                amount = amount.replace("rs", "", true)
+                amount = amount.replace("inr", "", true)
+                amount = amount.replace(" ", "", true)
+                amount = amount.replace(",", "", true)
+                if (amount.count { ch -> ch == '.' } > 1) {
+                    amount = amount.replaceFirst(".".toRegex(), "")
+                }
+                return if (amount.isEmpty()) 0.0 else amount.toDouble()
             }
-            return if(amount.isEmpty()) 0.0 else amount.toDouble()
+            // smsDto.refNumber="balance"
+        } else {
+            return 0.0
         }
     } else if (smsBody.contains("Avlbal", true)) {
         var newBody = smsBody.split("Avlbal")
-        val m = regEx.matcher(newBody[1].trim())
-        if (m.find()) {
-            var amount = m.group(0) ?: "0.0"
-            amount = amount.replace("rs.", "", true)
-            amount = amount.replace("rs", "", true)
-            amount = amount.replace("inr", "", true)
-            amount = amount.replace(" ", "", true)
-            amount = amount.replace(",", "", true)
-            if (amount.count { ch -> ch == '.' } > 1) {
-                amount = amount.replaceFirst(".".toRegex(), "")
+        if (newBody.isNotEmpty() && newBody.size > 1) {
+            val m = regEx.matcher(newBody[1].trim())
+            if (m.find()) {
+                var amount = m.group(0) ?: "0.0"
+                amount = amount.replace("rs.", "", true)
+                amount = amount.replace("rs", "", true)
+                amount = amount.replace("inr", "", true)
+                amount = amount.replace(" ", "", true)
+                amount = amount.replace(",", "", true)
+                if (amount.count { ch -> ch == '.' } > 1) {
+                    amount = amount.replaceFirst(".".toRegex(), "")
+                }
+                return if (amount.isEmpty()) 0.0 else amount.toDouble()
             }
-            return if(amount.isEmpty()) 0.0 else amount.toDouble()
+            // smsDto.refNumber="balance"
+        } else {
+            return 0.0
         }
     } else if (smsBody.contains("balance is", true)) {
         var newBody = smsBody.toLowerCase().split("balance is ")
-        val m = regEx.matcher(newBody[1].trim())
-        if (m.find()) {
-            var amount = m.group(0) ?: "0.0"
-            amount = amount.replace("rs.", "", true)
-            amount = amount.replace("rs", "", true)
-            amount = amount.replace("inr", "", true)
-            amount = amount.replace(" ", "", true)
-            amount = amount.replace(",", "", true)
-            if (amount.count { ch -> ch == '.' } > 1) {
-                amount = amount.replaceFirst(".".toRegex(), "")
+        if (newBody.isNotEmpty() && newBody.size > 1) {
+            val m = regEx.matcher(newBody[1].trim())
+            if (m.find()) {
+                var amount = m.group(0) ?: "0.0"
+                amount = amount.replace("rs.", "", true)
+                amount = amount.replace("rs", "", true)
+                amount = amount.replace("inr", "", true)
+                amount = amount.replace(" ", "", true)
+                amount = amount.replace(",", "", true)
+                if (amount.count { ch -> ch == '.' } > 1) {
+                    amount = amount.replaceFirst(".".toRegex(), "")
+                }
+                return if (amount.isEmpty()) 0.0 else amount.toDouble()
             }
-            return if(amount.isEmpty()) 0.0 else amount.toDouble()
+            // smsDto.refNumber="balance"
+        } else {
+            return 0.0
         }
     } else if (smsBody.contains("AvBl Bal:", true)) {
         var newBody = smsBody.toLowerCase().split("avbl bal: ")
-        val m = regEx.matcher(newBody[1].trim())
-        if (m.find()) {
-            var amount = m.group(0) ?: "0.0"
-            amount = amount.replace("rs.", "", true)
-            amount = amount.replace("rs", "", true)
-            amount = amount.replace("inr", "", true)
-            amount = amount.replace(" ", "", true)
-            amount = amount.replace(",", "", true)
-            if (amount.count { ch -> ch == '.' } > 1) {
-                amount = amount.replaceFirst(".".toRegex(), "")
+        if (newBody.isNotEmpty() && newBody.size > 1) {
+            val m = regEx.matcher(newBody[1].trim())
+            if (m.find()) {
+                var amount = m.group(0) ?: "0.0"
+                amount = amount.replace("rs.", "", true)
+                amount = amount.replace("rs", "", true)
+                amount = amount.replace("inr", "", true)
+                amount = amount.replace(" ", "", true)
+                amount = amount.replace(",", "", true)
+                if (amount.count { ch -> ch == '.' } > 1) {
+                    amount = amount.replaceFirst(".".toRegex(), "")
+                }
+                return if (amount.isEmpty()) 0.0 else amount.toDouble()
             }
-            return if(amount.isEmpty()) 0.0 else amount.toDouble()
+            // smsDto.refNumber="balance"
+        } else {
+            return 0.0
         }
     } else if (smsBody.contains("Avl. Bal:", true)) {
         var newBody = smsBody.toLowerCase().split("avl. bal:")
-        val m = regEx.matcher(newBody[1].trim())
-        if (m.find()) {
-            var amount = m.group(0) ?: "0.0"
-            amount = amount.replace("rs.", "", true)
-            amount = amount.replace("rs", "", true)
-            amount = amount.replace("inr", "", true)
-            amount = amount.replace(" ", "", true)
-            amount = amount.replace(",", "", true)
-            if (amount.count { ch -> ch == '.' } > 1) {
-                amount = amount.replaceFirst(".".toRegex(), "")
+        if (newBody.isNotEmpty() && newBody.size > 1) {
+            val m = regEx.matcher(newBody[1].trim())
+            if (m.find()) {
+                var amount = m.group(0) ?: "0.0"
+                amount = amount.replace("rs.", "", true)
+                amount = amount.replace("rs", "", true)
+                amount = amount.replace("inr", "", true)
+                amount = amount.replace(" ", "", true)
+                amount = amount.replace(",", "", true)
+                if (amount.count { ch -> ch == '.' } > 1) {
+                    amount = amount.replaceFirst(".".toRegex(), "")
+                }
+                return if (amount.isEmpty()) 0.0 else amount.toDouble()
             }
-            return if(amount.isEmpty()) 0.0 else amount.toDouble()
+            // smsDto.refNumber="balance"
+        } else {
+            return 0.0
         }
     } else if (smsBody.contains("AVl BAL", true)) {
         if (smsBody.contains("Avl. Bal:", true)) {
             var newBody = smsBody.toLowerCase().split("avl. bal:")
-            val m = regEx.matcher(newBody[1].trim())
-            if (m.find()) {
-                var amount = m.group(0) ?: "0.0"
-                amount = amount.replace("rs.", "", true)
-                amount = amount.replace("rs", "", true)
-                amount = amount.replace("inr", "", true)
-                amount = amount.replace(" ", "", true)
-                amount = amount.replace(",", "", true)
-                if (amount.count { ch -> ch == '.' } > 1) {
-                    amount = amount.replaceFirst(".".toRegex(), "")
+            if (newBody.isNotEmpty() && newBody.size > 1) {
+                val m = regEx.matcher(newBody[1].trim())
+                if (m.find()) {
+                    var amount = m.group(0) ?: "0.0"
+                    amount = amount.replace("rs.", "", true)
+                    amount = amount.replace("rs", "", true)
+                    amount = amount.replace("inr", "", true)
+                    amount = amount.replace(" ", "", true)
+                    amount = amount.replace(",", "", true)
+                    if (amount.count { ch -> ch == '.' } > 1) {
+                        amount = amount.replaceFirst(".".toRegex(), "")
+                    }
+                    return if (amount.isEmpty()) 0.0 else amount.toDouble()
                 }
-                return if(amount.isEmpty()) 0.0 else amount.toDouble()
+                // smsDto.refNumber="balance"
+            } else {
+                return 0.0
             }
         } else {
             var newBody = smsBody.toLowerCase().split("avl bal ")
-            val m = regEx.matcher(newBody[1].trim())
-            if (m.find()) {
-                var amount = m.group(0) ?: "0.0"
-                amount = amount.replace("rs.", "", true)
-                amount = amount.replace("rs", "", true)
-                amount = amount.replace("inr", "", true)
-                amount = amount.replace(" ", "", true)
-                amount = amount.replace(",", "", true)
-                if (amount.count { ch -> ch == '.' } > 1) {
-                    amount = amount.replaceFirst(".".toRegex(), "")
+            if (newBody.isNotEmpty() && newBody.size > 1) {
+                val m = regEx.matcher(newBody[1].trim())
+                if (m.find()) {
+                    var amount = m.group(0) ?: "0.0"
+                    amount = amount.replace("rs.", "", true)
+                    amount = amount.replace("rs", "", true)
+                    amount = amount.replace("inr", "", true)
+                    amount = amount.replace(" ", "", true)
+                    amount = amount.replace(",", "", true)
+                    if (amount.count { ch -> ch == '.' } > 1) {
+                        amount = amount.replaceFirst(".".toRegex(), "")
+                    }
+                    return if (amount.isEmpty()) 0.0 else amount.toDouble()
                 }
-                return if(amount.isEmpty()) 0.0 else amount.toDouble()
+                // smsDto.refNumber="balance"
+            } else {
+                return 0.0
             }
         }
     } else if (smsBody.contains("Avail Bal", true)) {
         var newBody = smsBody.toLowerCase().split("avail bal ")
-        val m = regEx.matcher(newBody[1].trim().replace("\\s".toRegex(), ""))
-        if (m.find()) {
-            var amount = m.group(0) ?: "0.0"
-            amount = amount.replace("rs.", "", true)
-            amount = amount.replace("rs", "", true)
-            amount = amount.replace("inr", "", true)
-            amount = amount.replace(" ", "", true)
-            amount = amount.replace(",", "", true)
-            if (amount.count { ch -> ch == '.' } > 1) {
-                amount = amount.replaceFirst(".".toRegex(), "")
+        if (newBody.isNotEmpty() && newBody.size > 1) {
+            val m = regEx.matcher(newBody[1].trim().replace("\\s".toRegex(), ""))
+            if (m.find()) {
+                var amount = m.group(0) ?: "0.0"
+                amount = amount.replace("rs.", "", true)
+                amount = amount.replace("rs", "", true)
+                amount = amount.replace("inr", "", true)
+                amount = amount.replace(" ", "", true)
+                amount = amount.replace(",", "", true)
+                if (amount.count { ch -> ch == '.' } > 1) {
+                    amount = amount.replaceFirst(".".toRegex(), "")
+                }
+                return if (amount.isEmpty()) 0.0 else amount.toDouble()
             }
-            return if(amount.isEmpty()) 0.0 else amount.toDouble()
+            // smsDto.refNumber="balance"
+        } else {
+            return 0.0
         }
     } else if (smsBody.contains("The combine BAL is", true)) {
         var newBody = smsBody.toLowerCase().split("bal is ")
-        val m = regEx.matcher(newBody[1].trim())
-        if (m.find()) {
-            var amount = m.group(0) ?: "0.0"
-            amount = amount.replace("rs.", "", true)
-            amount = amount.replace("rs", "", true)
-            amount = amount.replace("inr", "", true)
-            amount = amount.replace(" ", "", true)
-            amount = amount.replace(",", "", true)
-            if (amount.count { ch -> ch == '.' } > 1) {
-                amount = amount.replaceFirst(".".toRegex(), "")
+        if (newBody.isNotEmpty() && newBody.size > 1) {
+            val m = regEx.matcher(newBody[1].trim())
+            if (m.find()) {
+                var amount = m.group(0) ?: "0.0"
+                amount = amount.replace("rs.", "", true)
+                amount = amount.replace("rs", "", true)
+                amount = amount.replace("inr", "", true)
+                amount = amount.replace(" ", "", true)
+                amount = amount.replace(",", "", true)
+                if (amount.count { ch -> ch == '.' } > 1) {
+                    amount = amount.replaceFirst(".".toRegex(), "")
+                }
+                return if (amount.isEmpty()) 0.0 else amount.toDouble()
             }
-            return if(amount.isEmpty()) 0.0 else amount.toDouble()
+            // smsDto.refNumber="balance"
+        } else {
+            return 0.0
         }
     } else if (smsBody.contains("The balance in", true)) {
         var newBody = smsBody.toLowerCase().split("balance in ")
-        val m = regEx.matcher(newBody[1].trim())
-        if (m.find()) {
-            var amount = m.group(0) ?: "0.0"
-            amount = amount.replace("rs.", "", true)
-            amount = amount.replace("rs", "", true)
-            amount = amount.replace("inr", "", true)
-            amount = amount.replace(" ", "", true)
-            amount = amount.replace(",", "", true)
-            if (amount.count { ch -> ch == '.' } > 1) {
-                amount = amount.replaceFirst(".".toRegex(), "")
+        if (newBody.isNotEmpty() && newBody.size > 1) {
+            val m = regEx.matcher(newBody[1].trim())
+            if (m.find()) {
+                var amount = m.group(0) ?: "0.0"
+                amount = amount.replace("rs.", "", true)
+                amount = amount.replace("rs", "", true)
+                amount = amount.replace("inr", "", true)
+                amount = amount.replace(" ", "", true)
+                amount = amount.replace(",", "", true)
+                if (amount.count { ch -> ch == '.' } > 1) {
+                    amount = amount.replaceFirst(".".toRegex(), "")
+                }
+                return if (amount.isEmpty()) 0.0 else amount.toDouble()
             }
-            return if(amount.isEmpty()) 0.0 else amount.toDouble()
             // smsDto.refNumber="balance"
+        } else {
+            return 0.0
         }
     } else if (smsBody.contains("Available balance:", true)) {
         var newBody = smsBody.toLowerCase().split("available balance:")
-        val m = regEx.matcher(newBody[1].trim())
-        if (m.find()) {
-            var amount = m.group(0) ?: "0.0"
-            amount = amount.replace("rs.", "", true)
-            amount = amount.replace("rs", "", true)
-            amount = amount.replace("inr", "", true)
-            amount = amount.replace(" ", "", true)
-            amount = amount.replace(",", "", true)
-            if (amount.count { ch -> ch == '.' } > 1) {
-                amount = amount.replaceFirst(".".toRegex(), "")
+        if (newBody.isNotEmpty() && newBody.size > 1) {
+            val m = regEx.matcher(newBody[1].trim())
+            if (m.find()) {
+                var amount = m.group(0) ?: "0.0"
+                amount = amount.replace("rs.", "", true)
+                amount = amount.replace("rs", "", true)
+                amount = amount.replace("inr", "", true)
+                amount = amount.replace(" ", "", true)
+                amount = amount.replace(",", "", true)
+                if (amount.count { ch -> ch == '.' } > 1) {
+                    amount = amount.replaceFirst(".".toRegex(), "")
+                }
+                return if (amount.isEmpty()) 0.0 else amount.toDouble()
             }
-            return if(amount.isEmpty()) 0.0 else amount.toDouble()
             // smsDto.refNumber="balance"
+        } else {
+            return 0.0
         }
     } else if (smsBody.contains("Current balance is", true)) {
         var newBody = smsBody.toLowerCase().split("Current balance is")
-        val m = regEx.matcher(newBody[1].trim())
-        if (m.find()) {
-            var amount = m.group(0) ?: "0.0"
-            amount = amount.replace("rs.", "", true)
-            amount = amount.replace("rs", "", true)
-            amount = amount.replace("inr", "", true)
-            amount = amount.replace(" ", "", true)
-            amount = amount.replace(",", "", true)
-            if (amount.count { ch -> ch == '.' } > 1) {
-                amount = amount.replaceFirst(".".toRegex(), "")
+        if (newBody.isNotEmpty() && newBody.size > 1) {
+            val m = regEx.matcher(newBody[1].trim())
+            if (m.find()) {
+                var amount = m.group(0) ?: "0.0"
+                amount = amount.replace("rs.", "", true)
+                amount = amount.replace("rs", "", true)
+                amount = amount.replace("inr", "", true)
+                amount = amount.replace(" ", "", true)
+                amount = amount.replace(",", "", true)
+                if (amount.count { ch -> ch == '.' } > 1) {
+                    amount = amount.replaceFirst(".".toRegex(), "")
+                }
+                return if (amount.isEmpty()) 0.0 else amount.toDouble()
             }
-            return if(amount.isEmpty()) 0.0 else amount.toDouble()
             // smsDto.refNumber="balance"
+        } else {
+            return 0.0
         }
     } else {
         return 0.0
     }
     return 0.0
+}
+
+fun readAmountFromAvlBal(m: Matcher): Double {
+    return if (m.find()) {
+        var amount = m.group(0).replace("inr".toRegex(), "")
+        amount = amount.replace("rs.", "", true)
+        amount = amount.replace("rs".toRegex(), "")
+        amount = amount.replace("inr".toRegex(), "")
+        amount = amount.replace(" ".toRegex(), "")
+        amount = amount.replace(",".toRegex(), "")
+        if (amount.count { ch -> ch == '.' } > 1) {
+            amount = amount.replaceFirst(".".toRegex(), "")
+        }
+        if (amount.isEmpty()) 0.0 else amount.toDouble()
+    } else {
+        0.0
+    }
 }
 
 fun transactionType(smsBody: String): String {
@@ -1738,4 +1833,60 @@ fun checkIsTransactionSMS(smsBody: String): Boolean {
                     && !smsBody.contains("has been opened", true)
                     && !smsBody.contains("emi", true)
             ))
+}
+
+fun isAppNameContains(sms: String): Boolean {
+    return (sms.contains("dream11", ignoreCase = true)
+            || sms.contains("My11Circle", ignoreCase = true)
+            || sms.contains("RummyCircle", ignoreCase = true)
+            || sms.contains("RummyCulture", ignoreCase = true)
+            || sms.contains("A23", ignoreCase = true)
+            || sms.contains("Ace2Three", true)
+            )
+}
+
+fun extractMerchantNameFromSMS(mMessage: String) {
+    try {
+        val regEx: Pattern =
+            Pattern.compile("(?i)(?:\\sInfo.\\s*)([A-Za-z0-9*]*\\s?-?\\s?[A-Za-z0-9*]*\\s?-?\\.?)")
+        // Find instance of pattern matches
+        val m: Matcher = regEx.matcher(mMessage)
+        if (m.find()) {
+            var mMerchantName: String = m.group()
+            mMerchantName =
+                mMerchantName.replace("^\\s+|\\s+$".toRegex(), "") //trim from start and end
+            mMerchantName = mMerchantName.replace("Info.", "")
+            Log.e("TAG", "MERCHANT NAME : $mMerchantName")
+        } else {
+            Log.e("TAG", "MATCH NOTFOUND")
+        }
+    } catch (e: Exception) {
+        Log.e("TAG", e.toString())
+    }
+}
+
+var dateFormat: DateFormat = SimpleDateFormat("yyyy-MM")
+
+fun getCurrentMonth(): String {
+    val date = Date()
+    Log.d("Month", dateFormat.format(date))
+    return dateFormat.format(date)
+}
+
+fun millisToDate(currentTime: Long): String {
+    val finalDate: String
+    val calendar = Calendar.getInstance()
+    calendar.timeInMillis = currentTime
+    val date = calendar.time
+    finalDate = dateFormat.format(date)
+    return finalDate
+}
+
+fun getDateFromMilliseconds(timeInMillis: Long): Date {
+    return Date(timeInMillis)
+}
+
+fun Double.decimalFormatter(): String {
+    val formater = DecimalFormat("#.##")
+    return formater.format(this)
 }

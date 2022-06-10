@@ -13,8 +13,11 @@ import androidx.appcompat.app.AppCompatActivity
 import com.demo.readsms.extensions.*
 import com.demo.screenusage.ScreenUsage
 import kotlinx.android.synthetic.main.activity_main.*
+import java.io.IOException
+import java.io.InputStream
+import java.io.OutputStream
+import java.io.StringWriter
 import java.util.*
-import java.util.regex.Matcher
 import java.util.regex.Pattern
 
 
@@ -31,6 +34,7 @@ class MainActivity : AppCompatActivity() {
     lateinit var adapter: SMSAdapter
     lateinit var adapterWithAccountFilter: SMSAdapter
     var regEx: Pattern = Pattern.compile("[a-zA-Z0-9]{2}-[a-zA-Z0-9]{6}")
+    val competitorAppList: MutableList<SMSAppModel> = arrayListOf()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -50,6 +54,29 @@ class MainActivity : AppCompatActivity() {
         }
 
         Log.i("TAG", "ScreenUsage: ${ScreenUsage.retrieveScreenUsage()}")
+
+        /*val fileInString: String =
+            applicationContext.assets.open("rules.json").bufferedReader().use { it.readText() }
+        val b: String = mo17213b(applicationContext.assets.open("rules.json"), null as OutputStream?)
+        Log.i("TAG", "fileInString: ${b}")*/
+    }
+
+    @Throws(IOException::class)
+    fun mo17213b(inputStream: InputStream, outputStream: OutputStream?): String {
+        val bArr = ByteArray(1024)
+        val stringWriter = StringWriter()
+        while (true) {
+            val read = inputStream.read(bArr)
+            if (read == -1) {
+                return stringWriter.toString()
+            }
+            try {
+                stringWriter.write(String(bArr), 0, read)
+            } catch (unused: StringIndexOutOfBoundsException) {
+                val str = String(bArr)
+                stringWriter.write(str, 0, str.length)
+            }
+        }
     }
 
     override fun onResume() {
@@ -64,16 +91,41 @@ class MainActivity : AppCompatActivity() {
 
     private fun attachContactList() {
         val smsList = getSMSList()
-        adapter.submitList(smsList)
+        val cal1000: Calendar = GregorianCalendar().apply { add(Calendar.DAY_OF_MONTH, -1000) }
+        val cal30: Calendar = GregorianCalendar().apply { add(Calendar.DAY_OF_MONTH, -30) }
+        val cal60: Calendar = GregorianCalendar().apply { add(Calendar.DAY_OF_MONTH, -60) }
+        val cal90: Calendar = GregorianCalendar().apply { add(Calendar.DAY_OF_MONTH, -90) }
+        fun smsData(cal: Calendar) {
+            val smsFilteredList = smsList.filter {
+                (getDateFromMilliseconds(it.date) >= getDateFromMilliseconds(cal.timeInMillis)
+                        && getDateFromMilliseconds(it.date) <= Date())
+            }
+            Log.i("TAG", "attachContactList: ${smsFilteredList.size}")
+            adapter.submitList(smsFilteredList)
+
+            val smsSet: Set<String> = smsFilteredList.map { it.bankName }.toSet()
+            adapterWithAccountFilter.submitFilterList(
+                smsSet,
+                smsFilteredList as ArrayList<SMSModel>
+            )
+        }
+
+        smsData(cal1000)
+        btn30Days.setOnClickListener {
+            smsData(cal30)
+        }
+        btn60Days.setOnClickListener {
+            smsData(cal60)
+        }
+        btn90Days.setOnClickListener {
+            smsData(cal90)
+        }
 
         val appList = mutableSetOf<String>()
-        getSMSForCheckAppInstalled().forEach {
+        competitorAppList.forEach {
             appList.add(appMap[it.app_name] ?: it.app_name)
         }
         tv_appNames.text = "App present in SMS: ${appList}"
-
-        val smsSet: Set<String> = smsList.map { it.address.substring(3, it.address.length) }.toSet()
-        adapterWithAccountFilter.submitFilterList(smsSet, smsList as ArrayList<SMSModel>)
     }
 
     private fun isBankTransactionMSG(body: String): Boolean {
@@ -103,6 +155,17 @@ class MainActivity : AppCompatActivity() {
                 && !body.contains("otp", true)
                 && !body.contains("failed", true)
                 && !body.contains("emi", true))
+                )
+    }
+
+    fun isBankPromotionMSG(body: String): Boolean {
+        return (!body.contains("We are pleased to inform that", true)
+                && !body.contains("has been opened", true)
+                && !body.contains("otp", true)
+                && !body.contains("failed", true)
+                && !body.contains("emi", true)
+                && !body.contains("due", true)
+                && !body.contains("repayment", true)
                 )
     }
 
@@ -164,25 +227,39 @@ class MainActivity : AppCompatActivity() {
                     val address: String = cursor.getString(index_Address)
                     val body: String = cursor.getString(index_Body)
                     val date: Long = cursor.getLong(index_Date)
-                    if (checkSenderIsValid(sender = address) && isBankTransactionMSG(body) && !body.contains(
-                            "otp",
-                            true
-                        )
+                    if (checkSenderIsValid(sender = address)
+                        && isBankTransactionMSG(body)
+                        && isBankPromotionMSG(body)
                     ) {
+                        /*val regex =
+                            Pattern.compile("(?i)X+(\\d{3,4}).*debited.*(?:INR|Rs)[\\.,\\s]?([\\d,]*\\.?\\d{0,2}).*?([\\S]{3})\\*\\d*\\**(.*?)(?:\\*|\\.\\s*the avail).*bal.*(?:INR|Rs)[\\.,\\s]?([\\d,\\-]*\\.?\\d{2})")
+                        val m = regex.matcher(body.trim())
+                        if (m.find()) {
+                            Log.i("TAG", "regex: ${body}")
+                        }*/
                         lstSms.add(
                             SMSModel(
                                 address = address,
                                 body = body,
-                                date = millisToDate(date),
-                                avlBalance = getAvailableBalance(body),
-                                balance = getAmount(body).toDouble(),
+                                date = date,
+                                avlBalance = removeFirstOccurance(getAvailableBalance(body).toString()),
+                                balance = removeFirstOccurance(getAmount(body)),
 //                                accNumber = "Acc No: ${getAccountNumber(body)}",
                                 cardType = findCreditCardOrDebitCard(body, address),
 //                                refNumber = "Ref Number: ${getRefComanNumber(body)}",
-                                transactionType = transactionType(body)
+                                transactionType = transactionType(body),
+                                bankName = bankName[address.substring(3, address.length)
+                                    .uppercase()]
+                                    ?: address.substring(3, address.length)
                             )
                         )
-//                        extractMerchantNameFromSMS(body)
+                    } else {
+                        // getSMSForCheckAppInstalled
+                        if (isAppNameContains(body)) {
+                            competitorAppList.add(
+                                SMSAppModel(app_name = address.substring(3, address.length), body)
+                            )
+                        }
                     }
                     Log.i("TAG", "getSMSList: ${cursor.getString(index_Address)}")
                 } while (cursor.moveToNext())
@@ -190,98 +267,81 @@ class MainActivity : AppCompatActivity() {
                 // empty box, no SMS
             }
         } catch (e: Exception) {
+            Toast.makeText(this, "${e.message}", Toast.LENGTH_LONG).show()
             e.printStackTrace()
         }
         return lstSms
     }
 
-    private fun getSMSForCheckAppInstalled(): List<SMSAppModel> {
-        val lstSms: MutableList<SMSAppModel> = ArrayList()
-        try {
-            val projection = arrayOf("_id", "address", "person", "body", "date", "type")
-            val cursor: Cursor? =
-                contentResolver.query(
-                    Uri.parse("content://sms/inbox"),
-                    projection,
-                    null,
-                    null,
-                    null
-                )
-
-            if (cursor?.moveToFirst() == true) { // must check the result to prevent exception
-                val index_Address: Int = cursor.getColumnIndex("address")
-                val index_Person: Int = cursor.getColumnIndex("person")
-                val index_Body: Int = cursor.getColumnIndex("body")
-                val index_Date: Int = cursor.getColumnIndex("date")
-                val index_Type: Int = cursor.getColumnIndex("type")
-                do {
-                    val address: String = cursor.getString(index_Address)
-                    val intPerson: Int = cursor.getInt(index_Person)
-                    val body: String = cursor.getString(index_Body)
-                    val date: Long = cursor.getLong(index_Date)
-                    val int_Type: Int = cursor.getInt(index_Type)
-                    if (isAppNameContains(body)) {
-                        lstSms.add(
-                            SMSAppModel(app_name = address.substring(3, address.length), body)
-                        )
-                    }
-                } while (cursor.moveToNext())
-            } else {
-                // empty box, no SMS
-            }
-        } catch (e: Exception) {
-
+    fun removeFirstOccurance(amount: String): Double {
+        return if (amount.toString()
+                .count { ch -> ch == '.' } > 1
+        ) {
+            amount.toString()
+                .replaceFirst(".".toRegex(), "").toDouble()
+        } else {
+            amount.toDouble()
         }
-        return lstSms
     }
 
     companion object {
         val appMap = HashMap<String, String>().also {
             it["AcePro"] = "A23"
+            it["ATOTHIR"] = "A23"
             it["RMYCRL"] = "RummyCircle"
             it["RUCULT"] = "RummyCulture"
-            it["ATOTHIR"] = "A23"
+        }
+
+        val bankName = HashMap<String, String>().also {
+            it["ICICIB"] = "ICICI Bank"
+            it["HDFCBK"] = "HDFC Bank"
+            it["SBIINB"] = "SBI Bank"
+            it["SBMSMS"] = "SBI Bank"
+            it["SCISMS"] = "SCISMS"
+            it["CBSSBI"] = "SBI Bank"
+            it["SBIPSG"] = "SBI Bank"
+            it["SBIUPI"] = "SBI Bank"
+            it["SBICRD"] = "SBI Bank"
+            it["ATMSBI"] = "SBI Bank"
+            it["QPMYAMEX"] = "QPMYAMEX"
+            it["IDFCFB"] = "IDFC Bank"
+            it["UCOBNK"] = "UCO Bank"
+            it["CANBNK"] = "CANADA Bank"
+            it["BOIIND"] = "BOI"
+            it["AXISBK"] = "AXIS Bank"
+            it["PAYTMB"] = "PAYTM Bank"
+            it["PaytMB"] = "PAYTM Bank"
+            it["IPAYTM"] = "PAYTM Bank"
+            it["VPAYTM"] = "PAYTM Bank"
+            it["UnionB"] = "UNION Bank"
+            it["UNIONB"] = "UNION Bank"
+            it["INDBNK"] = "INDBNK"
+            it["KOTAKB"] = "Kotaka Bank"
+            it["CENTBK"] = "CENTBK"
+            it["SCBANK"] = "SCBANK"
+            it["PNBSMS"] = "PNB Bank"
+            it["DOPBNK"] = "DOPBNK"
+            it["YESBNK"] = "ES Bank"
+            it["IDBIBK"] = "IDBI Bank"
+            it["ALBANK"] = "ALBANK"
+            it["CITIBK"] = "CITI Bank"
+            it["ANDBNK"] = "ANDBNK"
+            it["BOBTXN"] = "BOBTXN"
+            it["IOBCHN"] = "IOBCHN"
+            it["MAHABK"] = "MAHARASTRA Bank"
+            it["OBCBNK"] = "OBCBNK"
+            it["RBLBNK"] = "RBL Bank"
+            it["RBLCRD"] = "RBLCRD"
+            it["SPRCRD"] = "SPRCRD"
+            it["HSBCBK"] = "HSBC Bank"
+            it["HSBCIN"] = "HSBC Bank"
+            it["DBSBNK"] = "DBS Bank"
+            it["SLCEIT"] = "SLICE CARD"
+            it["UniCrd"] = "UNI Card"
+            it["UNICRD"] = "UNI Card"
+            it["INDUSB"] = "INDUSB"
         }
     }
-
-    private fun extractMerchantNameFromSMS(mMessage: String) {
-        try {
-            val regEx: Pattern =
-                Pattern.compile("(?i)(?:\\sInfo.\\s*)([A-Za-z0-9*]*\\s?-?\\s?[A-Za-z0-9*]*\\s?-?\\.?)")
-            // Find instance of pattern matches
-            val m: Matcher = regEx.matcher(mMessage)
-            if (m.find()) {
-                var mMerchantName: String = m.group()
-                mMerchantName =
-                    mMerchantName.replace("^\\s+|\\s+$".toRegex(), "") //trim from start and end
-                mMerchantName = mMerchantName.replace("Info.", "")
-                Log.e("TAG", "MERCHANT NAME : $mMerchantName")
-            } else {
-                Log.e("TAG", "MATCH NOTFOUND")
-            }
-        } catch (e: Exception) {
-            Log.e("TAG", e.toString())
-        }
-    }
-
-    private fun isAppNameContains(sms: String): Boolean {
-        return (sms.contains("dream11", ignoreCase = true)
-                || sms.contains("My11Circle", ignoreCase = true)
-                || sms.contains("RummyCircle", ignoreCase = true)
-                || sms.contains("RummyCulture", ignoreCase = true)
-                || sms.contains("A23", ignoreCase = true)
-                || sms.contains("Ace2Three", true)
-                )
-    }
-}
-
-private fun millisToDate(currentTime: Long): String {
-    val finalDate: String
-    val calendar = Calendar.getInstance()
-    calendar.timeInMillis = currentTime
-    val date = calendar.time
-    finalDate = date.toString()
-    return finalDate
 }
 
 data class SMSModel(
@@ -293,7 +353,8 @@ data class SMSModel(
     val accNumber: String = "",
     val transactionType: String = "",
     val refNumber: String = "",
-    val date: String = ""
+    val bankName: String = "",
+    val date: Long = 0
 )
 
 data class SMSAppModel(
